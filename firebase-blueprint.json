@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["buyer", "seller", "admin"] },
+        "wallet_balance": { "type": "number" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email"]
+    },
+    "Listing": {
+      "title": "Listing",
+      "description": "Marketplace item listing",
+      "type": "object",
+      "properties": {
+        "seller_id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "location": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["active", "sold", "suspended"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["seller_id", "title", "price", "category", "location"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Escrow transaction order",
+      "type": "object",
+      "properties": {
+        "buyer_id": { "type": "string" },
+        "seller_id": { "type": "string" },
+        "listing_id": { "type": "string" },
+        "amount": { "type": "number" },
+        "escrow_status": { "type": "string", "enum": ["pending", "held", "released", "disputed", "refunded"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["buyer_id", "seller_id", "listing_id", "amount"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Real-time chat message",
+      "type": "object",
+      "properties": {
+        "sender_id": { "type": "string" },
+        "receiver_id": { "type": "string" },
+        "listing_id": { "type": "string" },
+        "content": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sender_id", "receiver_id", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/listings/{listingId}": {
+      "schema": "Listing",
+      "description": "Item listings"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Escrow orders"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat messages between users"
+    }
+  }
+}

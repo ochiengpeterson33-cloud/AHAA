@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return request.auth.uid == userId; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Validation schemas
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() < 100;
+    }
+
+    function isValidListing(data) {
+      return data.keys().hasAll(['seller_id', 'title', 'price', 'category', 'location']) &&
+             data.seller_id == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.price is number && data.price >= 0 &&
+             data.category is string &&
+             data.location is string;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['buyer_id', 'seller_id', 'listing_id', 'amount']) &&
+             data.buyer_id == request.auth.uid &&
+             data.amount is number && data.amount > 0;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['sender_id', 'receiver_id', 'content']) &&
+             data.sender_id == request.auth.uid &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 5000;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow create: if isSignedIn() && isOwner(userId) && isValidUser(incoming());
+      allow update: if isSignedIn() && isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'wallet_balance']);
+    }
+
+    // Listings
+    match /listings/{listingId} {
+      allow list, get: if true; // Public listings
+      allow create: if isSignedIn() && isValidListing(incoming());
+      allow update: if isSignedIn() && isOwner(existing().seller_id) && isValidListing(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'price', 'category', 'location', 'images', 'status']);
+      allow delete: if isSignedIn() && isOwner(existing().seller_id);
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (isOwner(existing().buyer_id) || isOwner(existing().seller_id));
+      allow list: if isSignedIn() && (resource.data.buyer_id == request.auth.uid || resource.data.seller_id == request.auth.uid);
+      allow create: if isSignedIn() && isValidOrder(incoming());
+      allow update: if isSignedIn() && (
+        // Buyer confirming receipt
+        (isOwner(existing().buyer_id) && incoming().diff(existing()).affectedKeys().hasOnly(['escrow_status']) && incoming().escrow_status == 'released') ||
+        // Seller actions (if any)
+        (isOwner(existing().seller_id) && incoming().diff(existing()).affectedKeys().hasOnly(['escrow_status']))
+      );
+    }
+
+    // Messages
+    match /chats/{chatId}/messages/{messageId} {
+      // chatId usually contains both user IDs (e.g., uid1_uid2)
+      allow list, get: if isSignedIn() && (chatId.contains(request.auth.uid));
+      allow create: if isSignedIn() && isValidMessage(incoming()) && (chatId.contains(request.auth.uid));
+    }
+  }
+}

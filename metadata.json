@@ -1,0 +1,12 @@
+{
+  "name": "Jiji Clone Marketplace",
+  "description": "A secure online classifieds marketplace with real-time chat, escrow payments, and fraud detection, inspired by Jiji.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "real-time-chat",
+    "escrow-payments",
+    "fraud-detection"
+  ]
+}
