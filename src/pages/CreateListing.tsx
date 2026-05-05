@@ -22,23 +22,24 @@ export default function CreateListing() {
   const { user } = useAuthStore();
 
   const handleAiCheck = async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    setLoading(true);
+    setAiAnalysis(null);
     try {
-      const prompt = `Analyze this marketplace listing for potential fraud or scam signals. 
-      Title: ${formData.title}
-      Description: ${formData.description}
-      Price: ${formData.price}
-      Category: ${formData.category}
-      
-      Respond with a short safety verdict and advice.`;
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+      const response = await fetch('/api/analyze-listing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          price: formData.price
+        })
       });
-      setAiAnalysis(response.text || "AI verification failed");
+      const data = await response.json();
+      setAiAnalysis(data.analysis || 'Analysis complete. Looks safe.');
     } catch (err) {
-      console.error(err);
+      setAiAnalysis('Could not complete safety check.');
+    } finally {
+      setLoading(false);
     }
   };
 

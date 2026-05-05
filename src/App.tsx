@@ -37,7 +37,7 @@ export default function App() {
     return () => unsubscribe();
   }, [setAuth, setLoading]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black text-emerald-600 animate-pulse">SAFIRI...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black text-emerald-600 animate-pulse text-2xl">AHAA...</div>;
 
   return (
     <Router>
